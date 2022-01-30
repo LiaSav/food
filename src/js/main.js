@@ -1,5 +1,6 @@
 "use strict";
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
+
   // TABS
   let tabs = document.querySelectorAll(".tabheader__item"),
     tabsContent = document.querySelectorAll(".tabcontent"),
@@ -35,6 +36,7 @@ document.addEventListener("DOMContentLoaded", function() {
       });
     }
   });
+
   // TIMER
   const deadline = "2022-06-19";
 
@@ -85,6 +87,7 @@ document.addEventListener("DOMContentLoaded", function() {
       }
     }
   }
+
   setClock(".timer", deadline);
 
   // Modal
@@ -156,9 +159,7 @@ document.addEventListener("DOMContentLoaded", function() {
         this.classes = "menu__item";
         element.classList.add(this.classes);
       } else {
-        this.classes.forEach((className) =>
-          element.classList.add(className)
-        );
+        this.classes.forEach((className) => element.classList.add(className));
       }
 
       element.innerHTML = `
@@ -259,51 +260,52 @@ document.addEventListener("DOMContentLoaded", function() {
   //     });
   //   });
   // }
-
   //
-
   // для отправки данных в формате json
   function postData(form) {
     form.addEventListener("submit", (e) => {
       e.preventDefault();
 
-      let statusMessage = document.createElement("img");
+      const statusMessage = document.createElement("img");
       statusMessage.src = message.loading;
       statusMessage.style.cssText = `
         display: block;
         margin: 0 auto;
       `;
+
       form.insertAdjacentElement("afterend", statusMessage);
 
-      const request = new XMLHttpRequest();
-
-      request.open("POST", "server.php");
-
-      // кодировку можно не указывать
-      request.setRequestHeader(
-        "Content-type",
-        "application/json; charset=utf-8"
-      );
       const formData = new FormData(form);
 
       const object = {};
       formData.forEach(function (value, key) {
         object[key] = value;
       });
-      const json = JSON.stringify(object);
-
-      request.send(json);
-
-      request.addEventListener("load", () => {
-        if (request.status === 200) {
-          console.log(request.response);
+      // если допустить ошибку в пути например server1.php
+      // промис который запускается при помощи fetch не перейдет в состояние отклонено
+      // из за ответа http который считается ошибкой 404, 500, 501, 502 ...
+      // он все равно выполниться нормально, измениться только свойство статус которое перейдет в
+      // состояние false
+      // reject будет происходить только при сбои сети или когда что то помешало запросу выполниться
+      fetch("server.php", {
+        method: "POST",
+        headers: {
+          "Content-type": "application/json",
+        },
+        body: JSON.stringify(object),
+      })
+        .then((data) => data.text())
+        .then((data) => {
+          console.log(data);
           showThanksModal(message.success);
           statusMessage.remove();
-          form.reset();
-        } else {
+        })
+        .catch(() => {
           showThanksModal(message.failure);
-        }
-      });
+        })
+        .finally(() => {
+          form.reset();
+        });
     });
   }
 
